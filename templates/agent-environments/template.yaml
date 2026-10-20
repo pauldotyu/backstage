@@ -5,7 +5,7 @@ metadata:
   title: Request an agent environment
   description: Request an agent environment on Azure
 spec:
-  owner: group:default/platform-team
+  owner: group:default/backstage-admins
   type: resource
   parameters:
     - title: Environment details
