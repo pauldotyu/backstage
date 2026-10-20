@@ -1,0 +1,20 @@
+Backstage is deploying to namespace {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+
+URL: {{ if .Values.ingress.tls }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+
+Port-forward to reach it locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "backstage.fullname" . }} 7007:{{ .Values.service.port }}
+  open http://localhost:7007
+{{- end }}
+
+app.baseUrl:     {{ .Values.appConfig.app.baseUrl | default "(not set)" }}
+backend.baseUrl: {{ .Values.appConfig.backend.baseUrl | default "(not set)" }}
+
+Microsoft Entra redirect URI to register on the app registration:
+  {{ .Values.appConfig.backend.baseUrl | default "<backend.baseUrl>" }}/api/auth/microsoft/handler/frame
+
+Logs:
+  kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "backstage.fullname" . }} -f

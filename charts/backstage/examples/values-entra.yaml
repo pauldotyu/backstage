@@ -1,0 +1,65 @@
+# Example values for Microsoft Entra sign-in and Entra user/group ingestion.
+#
+# Create the secret first so credentials never land in a values file:
+#
+#   kubectl create namespace backstage
+#   kubectl -n backstage create secret generic backstage-secrets \
+#     --from-literal=AUTH_MICROSOFT_CLIENT_SECRET='<client-secret>' \
+#     --from-literal=GITHUB_TOKEN='<github-pat>'
+#
+# Then install:
+#
+#   helm upgrade --install backstage ./charts/backstage -n backstage \
+#     -f charts/backstage/examples/values-entra.yaml
+#
+# Register this redirect URI on the Entra app registration (Web platform):
+#   https://<host>/api/auth/microsoft/handler/frame
+# For a port-forward test, http://localhost:7007/api/auth/microsoft/handler/frame
+# also works.
+
+existingSecret: backstage-secrets
+
+ingress:
+  enabled: true
+  className: webapprouting.kubernetes.azure.com
+  host: backstage.example.com
+  tls:
+    - secretName: backstage-tls
+      hosts:
+        - backstage.example.com
+
+appConfig:
+  app:
+    baseUrl: https://backstage.example.com
+  backend:
+    baseUrl: https://backstage.example.com
+    cors:
+      origin: https://backstage.example.com
+
+  auth:
+    environment: production
+    providers:
+      microsoft:
+        production:
+          clientId: <entra-app-client-id>
+          clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
+          tenantId: <entra-tenant-id>
+          domainHint: <entra-tenant-id>
+          signIn:
+            resolvers:
+              - resolver: emailMatchingUserEntityAnnotation
+
+  catalog:
+    providers:
+      microsoftGraphOrg:
+        default:
+          tenantId: <entra-tenant-id>
+          clientId: <entra-app-client-id>
+          clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
+          userGroupMember:
+            filter: id eq '<entra-group-object-id>'
+          group:
+            filter: id eq '<entra-group-object-id>'
+          schedule:
+            frequency: { minutes: 30 }
+            timeout: { minutes: 3 }
