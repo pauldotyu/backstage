@@ -49,16 +49,40 @@ service:
   type: ClusterIP
   port: 80
 
-ingress:
+# Gateway API ingress. Defaults target the AKS application routing add-on's
+# Istio implementation (GatewayClass approuting-istio).
+gateway:
   enabled: false
-  # AKS application routing add-on: webapprouting.kubernetes.azure.com
-  className: ''
+  # true: the chart creates a Gateway in the release namespace.
+  # false: attach the HTTPRoutes to an existing Gateway (set name/namespace and
+  # make sure its listeners allow routes from this namespace).
+  create: true
+  name: ''
+  namespace: ''
+  className: approuting-istio
   annotations: {}
+  # Hostname for the listeners, HTTPRoute, and certificate, e.g. backstage.example.com
   host: ''
-  tls: []
-  # - secretName: backstage-tls
-  #   hosts:
-  #     - backstage.example.com
+  http:
+    listenerName: http
+    port: 80
+    # When TLS is enabled, redirect HTTP to HTTPS instead of serving the app.
+    redirectToHttps: true
+  tls:
+    enabled: false
+    listenerName: https
+    port: 443
+    # Defaults to <fullname>-tls.
+    secretName: ''
+    # Create a cert-manager Certificate that writes secretName. Disable to
+    # bring your own TLS Secret.
+    certManager:
+      enabled: true
+      issuerRef:
+        name: ''
+        kind: ClusterIssuer
+      duration: ''
+      renewBefore: ''
 
 resources:
   requests:

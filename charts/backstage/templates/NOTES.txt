@@ -1,8 +1,19 @@
 Backstage is deploying to namespace {{ .Release.Namespace }}.
+{{- $scheme := ternary "https" "http" .Values.gateway.tls.enabled }}
 
-{{- if .Values.ingress.enabled }}
+{{- if and .Values.gateway.enabled .Values.gateway.host }}
 
-URL: {{ if .Values.ingress.tls }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}
+URL: {{ $scheme }}://{{ .Values.gateway.host }}
+{{- if .Values.gateway.create }}
+
+Gateway address (point a DNS A record for {{ .Values.gateway.host }} here):
+  kubectl -n {{ .Release.Namespace }} get gateway {{ include "backstage.gatewayName" . }} -o jsonpath='{.status.addresses[0].value}'
+{{- end }}
+{{- if and .Values.gateway.tls.enabled .Values.gateway.create .Values.gateway.tls.certManager.enabled }}
+
+Certificate status:
+  kubectl -n {{ .Release.Namespace }} get certificate {{ include "backstage.fullname" . }}
+{{- end }}
 {{- else }}
 
 Port-forward to reach it locally:

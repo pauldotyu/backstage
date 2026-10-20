@@ -14,19 +14,24 @@
 #
 # Register this redirect URI on the Entra app registration (Web platform):
 #   https://<host>/api/auth/microsoft/handler/frame
-# For a port-forward test, http://localhost:7007/api/auth/microsoft/handler/frame
-# also works.
+#   (for a port-forward test, http://localhost:7007/api/auth/microsoft/handler/frame also works)
+# Then create a DNS A record for <host> pointing at the Gateway address:
+#   kubectl -n backstage get gateway backstage -o jsonpath='{.status.addresses[0].value}'
 
 existingSecret: backstage-secrets
 
-ingress:
+# AKS application routing add-on, Istio Gateway API implementation.
+# TLS certificate is issued by cert-manager; see cluster-issuer-azure-dns.yaml.
+gateway:
   enabled: true
-  className: webapprouting.kubernetes.azure.com
+  className: approuting-istio
   host: backstage.example.com
   tls:
-    - secretName: backstage-tls
-      hosts:
-        - backstage.example.com
+    enabled: true
+    certManager:
+      issuerRef:
+        name: letsencrypt
+        kind: ClusterIssuer
 
 appConfig:
   app:

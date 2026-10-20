@@ -45,6 +45,34 @@ app.kubernetes.io/component: postgresql
 {{- end }}
 {{- end }}
 
+{{- define "backstage.gatewayName" -}}
+{{- if .Values.gateway.create }}
+{{- default (include "backstage.fullname" .) .Values.gateway.name }}
+{{- else }}
+{{- required "gateway.name is required when gateway.create=false" .Values.gateway.name }}
+{{- end }}
+{{- end }}
+
+{{- define "backstage.tlsSecretName" -}}
+{{- default (printf "%s-tls" (include "backstage.fullname" .)) .Values.gateway.tls.secretName }}
+{{- end }}
+
+{{/*
+parentRef for HTTPRoutes. Call with (dict "ctx" . "section" "<listener name>").
+*/}}
+{{- define "backstage.gatewayParentRef" -}}
+{{- $ctx := .ctx -}}
+- group: gateway.networking.k8s.io
+  kind: Gateway
+  name: {{ include "backstage.gatewayName" $ctx }}
+  {{- if and (not $ctx.Values.gateway.create) $ctx.Values.gateway.namespace }}
+  namespace: {{ $ctx.Values.gateway.namespace }}
+  {{- end }}
+  {{- with .section }}
+  sectionName: {{ . }}
+  {{- end }}
+{{- end }}
+
 {{/*
 PostgreSQL password: explicit value, else the existing Secret's value, else a new random one.
 */}}
