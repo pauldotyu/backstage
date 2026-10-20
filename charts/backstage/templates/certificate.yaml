@@ -2,7 +2,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ include "backstage.fullname" . }}
+  name: {{ include "backstage.fullname" . }}-tls
   labels:
     {{- include "backstage.labels" . | nindent 4 }}
     {{- include "backstage.selectorLabels" . | nindent 4 }}
