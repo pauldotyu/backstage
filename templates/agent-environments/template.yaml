@@ -52,7 +52,7 @@ spec:
           description: The cost center associated with the environment
           minLength: 1
           maxLength: 20
-          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          pattern: '^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$'
   steps:
     - id: render
       name: Generate environment request
