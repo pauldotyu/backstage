@@ -120,6 +120,74 @@ yarn lint:all   # Lint all workspaces
 yarn build:all  # Build all workspaces
 ```
 
+## Deploy to AKS with Helm
+
+The `Container image and Helm chart` workflow builds the root `Dockerfile` and pushes `ghcr.io/<owner>/backstage` on every push to `main` (`latest` and `sha-<commit>` tags) and on `v*` tags. Pull requests build and lint without pushing.
+
+After the image is pushed, the workflow packages `charts/backstage` and pushes it as an OCI artifact to `oci://ghcr.io/<owner>/charts/backstage`. Each chart version pins `appVersion`, and therefore the default image tag, to the image built from the same commit:
+
+- Push to `main`: chart `<Chart.yaml version>-sha-<commit>` with image `sha-<commit>`. Helm treats this as a pre-release, so pass `--version` explicitly (or `--devel`).
+- Tag `v1.2.3`: chart `1.2.3` with image `1.2.3`.
+
+The first push creates private GHCR packages for the image and chart. Make them public, or run `helm registry login ghcr.io` before installing and add an `imagePullSecrets` entry for the image.
+
+To build locally: `docker build -t backstage .`
+
+The chart in `charts/backstage` runs the backend and, by default, a single-replica PostgreSQL StatefulSet for demos. `appConfig` in values is mounted as `app-config.k8s.yaml` and loaded after `app-config.yaml` and `app-config.production.yaml`, so it overrides both. Keep secrets out of values by referencing `${ENV_VAR}` placeholders and supplying them through `existingSecret`.
+
+Ingress uses the Kubernetes Gateway API. The defaults target the AKS application routing add-on's Istio implementation (`gatewayClassName: approuting-istio`) with the managed Gateway API CRDs installed. With `gateway.tls.enabled`, the chart creates:
+
+- A Gateway with an HTTP listener and an HTTPS listener that terminates TLS.
+- An HTTPRoute to Backstage on the HTTPS listener.
+- An HTTP-to-HTTPS redirect route.
+- A cert-manager `Certificate` for the HTTPS listener's Secret.
+
+The `Certificate` is created directly, so cert-manager's Gateway API integration doesn't need to be enabled. To attach to a shared Gateway instead, set `gateway.create=false` with `gateway.name` and `gateway.namespace`.
+
+### TLS prerequisites
+
+The chart assumes cert-manager is installed and a ClusterIssuer already exists. Set its name in `gateway.tls.certManager.issuerRef.name`. To find it:
+
+```sh
+kubectl get clusterissuers
+```
+
+If cert-manager isn't installed, follow [Deploy cert-manager on Azure Kubernetes Service (AKS) and use Let's Encrypt to sign a certificate for an HTTPS website](https://cert-manager.io/docs/tutorials/getting-started-aks-letsencrypt/). It covers the install, the workload identity setup for Azure DNS, and creating a ClusterIssuer.
+
+If cert-manager is installed but there's no ClusterIssuer, create one. `charts/backstage/examples/cluster-issuer-azure-dns.yaml` is a Let's Encrypt ClusterIssuer that solves DNS01 challenges against Azure DNS with workload identity. It requires cert-manager's service account to be federated to a managed identity with DNS Zone Contributor on the zone. Fill in the placeholders, then apply it:
+
+```sh
+kubectl apply -f charts/backstage/examples/cluster-issuer-azure-dns.yaml
+kubectl get clusterissuer letsencrypt   # READY should be True
+```
+
+### Install
+
+```sh
+kubectl create namespace backstage
+kubectl -n backstage create secret generic backstage-secrets \
+  --from-literal=AUTH_MICROSOFT_CLIENT_SECRET='<client-secret>' \
+  --from-literal=GITHUB_TOKEN='<github-pat>'
+
+cp charts/backstage/examples/values-entra.yaml values-entra.local.yaml
+# Fill in tenant, client, group IDs, and host in values-entra.local.yaml
+
+helm upgrade --install backstage oci://ghcr.io/<owner>/charts/backstage -n backstage \
+  --version <chart-version> \
+  -f values-entra.local.yaml
+
+# Or install from this checkout. Chart.yaml appVersion is `latest`, so pin the image:
+# helm upgrade --install backstage ./charts/backstage -n backstage \
+#   -f values-entra.local.yaml --set image.tag=sha-<commit>
+
+# Point a DNS A record for the host at the Gateway address
+kubectl -n backstage get gateway backstage -o jsonpath='{.status.addresses[0].value}'
+```
+
+In the deployed config, `auth.environment` is `production`, so the Microsoft provider settings sit under `providers.microsoft.production`. Add `https://<host>/api/auth/microsoft/handler/frame` as a **Web** redirect URI on the app registration. To test without the Gateway, set the base URLs to `http://localhost:7007` and run `kubectl -n backstage port-forward svc/backstage 7007:80`.
+
+For production, set `postgresql.enabled=false` and point `externalDatabase` at Azure Database for PostgreSQL. TechDocs is configured to generate docs with Docker, which is not available in the pod.
+
 ## Repository layout
 
 - `packages/app/`: Backstage frontend, navigation, and sign-in page.
@@ -128,5 +196,8 @@ yarn build:all  # Build all workspaces
 - `app-config.yaml`: Shared configuration and local development defaults.
 - `app-config.local.yaml`: Git-ignored local configuration generated by `backstage-azure`.
 - `app-config.production.yaml`: Production-oriented configuration scaffold, including PostgreSQL settings. It is not a complete production deployment.
+- `Dockerfile`: Multi-stage image build for the backend, which also serves the frontend.
+- `charts/backstage/`: Helm chart for AKS. See `examples/` for Entra values and a cert-manager ClusterIssuer.
+- `.github/workflows/container-image.yaml`: Builds and pushes the image to GHCR.
 
 The backend currently registers an allow-all permission policy. Microsoft Entra sign-in does not turn that into a production authorization policy. Review access controls, secret management, persistent storage, and deployment configuration before using this outside a local learning environment.

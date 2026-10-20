@@ -1,0 +1,70 @@
+# Example values for Microsoft Entra sign-in and Entra user/group ingestion.
+#
+# Create the secret first so credentials never land in a values file:
+#
+#   kubectl create namespace backstage
+#   kubectl -n backstage create secret generic backstage-secrets \
+#     --from-literal=AUTH_MICROSOFT_CLIENT_SECRET='<client-secret>' \
+#     --from-literal=GITHUB_TOKEN='<github-pat>'
+#
+# Then install:
+#
+#   helm upgrade --install backstage ./charts/backstage -n backstage \
+#     -f charts/backstage/examples/values-entra.yaml
+#
+# Register this redirect URI on the Entra app registration (Web platform):
+#   https://<host>/api/auth/microsoft/handler/frame
+#   (for a port-forward test, http://localhost:7007/api/auth/microsoft/handler/frame also works)
+# Then create a DNS A record for <host> pointing at the Gateway address:
+#   kubectl -n backstage get gateway backstage -o jsonpath='{.status.addresses[0].value}'
+
+existingSecret: backstage-secrets
+
+# AKS application routing add-on, Istio Gateway API implementation.
+# TLS certificate is issued by cert-manager; see cluster-issuer-azure-dns.yaml.
+gateway:
+  enabled: true
+  className: approuting-istio
+  host: backstage.example.com
+  tls:
+    enabled: true
+    certManager:
+      issuerRef:
+        name: letsencrypt
+        kind: ClusterIssuer
+
+appConfig:
+  app:
+    baseUrl: https://backstage.example.com
+  backend:
+    baseUrl: https://backstage.example.com
+    cors:
+      origin: https://backstage.example.com
+
+  auth:
+    environment: production
+    providers:
+      microsoft:
+        production:
+          clientId: <entra-app-client-id>
+          clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
+          tenantId: <entra-tenant-id>
+          domainHint: <entra-tenant-id>
+          signIn:
+            resolvers:
+              - resolver: emailMatchingUserEntityAnnotation
+
+  catalog:
+    providers:
+      microsoftGraphOrg:
+        default:
+          tenantId: <entra-tenant-id>
+          clientId: <entra-app-client-id>
+          clientSecret: ${AUTH_MICROSOFT_CLIENT_SECRET}
+          userGroupMember:
+            filter: id eq '<entra-group-object-id>'
+          group:
+            filter: id eq '<entra-group-object-id>'
+          schedule:
+            frequency: { minutes: 30 }
+            timeout: { minutes: 3 }

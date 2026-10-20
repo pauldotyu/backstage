@@ -1,0 +1,148 @@
+replicaCount: 1
+
+# maxSurge 0 stops the old pod before starting a new one, so two backends never
+# run database migrations concurrently during a rollout.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
+image:
+  repository: ghcr.io/pauldotyu/backstage
+  # Defaults to the chart appVersion. Charts published from CI pin appVersion
+  # to the image built from the same commit (sha-<commit> or the release tag).
+  tag: ''
+  pullPolicy: IfNotPresent
+
+# Needed only if the GHCR package is private.
+imagePullSecrets: []
+# - name: ghcr-pull
+
+nameOverride: ''
+fullnameOverride: ''
+
+serviceAccount:
+  create: true
+  name: ''
+  annotations: {}
+
+podAnnotations: {}
+podLabels: {}
+
+# Backstage app-config merged last, after app-config.yaml and
+# app-config.production.yaml baked into the image. Use ${ENV_VAR}
+# placeholders for secrets and supply them with `existingSecret` or `secretEnv`.
+appConfig:
+  app:
+    baseUrl: http://localhost:7007
+  backend:
+    baseUrl: http://localhost:7007
+    cors:
+      origin: http://localhost:7007
+
+# Name of an existing Secret. Every key is exposed to the container as an
+# environment variable (envFrom), for example AUTH_MICROSOFT_CLIENT_SECRET.
+existingSecret: ''
+
+# Key/value pairs rendered into a chart-managed Secret and exposed as env vars.
+# Prefer existingSecret so secrets stay out of values files.
+secretEnv: {}
+
+# Additional plain environment variables.
+extraEnv: []
+# - name: LOG_LEVEL
+#   value: debug
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Gateway API ingress. Defaults target the AKS application routing add-on's
+# Istio implementation (GatewayClass approuting-istio).
+gateway:
+  enabled: false
+  # true: the chart creates a Gateway in the release namespace.
+  # false: attach the HTTPRoutes to an existing Gateway (set name/namespace and
+  # make sure its listeners allow routes from this namespace).
+  create: true
+  name: ''
+  namespace: ''
+  className: approuting-istio
+  annotations: {}
+  # Hostname for the listeners, HTTPRoute, and certificate, e.g. backstage.example.com
+  host: ''
+  http:
+    listenerName: http
+    port: 80
+    # When TLS is enabled, redirect HTTP to HTTPS instead of serving the app.
+    redirectToHttps: true
+  tls:
+    enabled: false
+    listenerName: https
+    port: 443
+    # Defaults to <fullname>-tls.
+    secretName: ''
+    # Create a cert-manager Certificate that writes secretName. Disable to
+    # bring your own TLS Secret.
+    certManager:
+      enabled: true
+      issuerRef:
+        name: ''
+        kind: ClusterIssuer
+      duration: ''
+      renewBefore: ''
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 2Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# In-cluster PostgreSQL for demos and dev. For production, disable this and
+# point externalDatabase at Azure Database for PostgreSQL Flexible Server.
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: '17'
+    pullPolicy: IfNotPresent
+  username: backstage
+  # Leave empty to generate a random password that persists across upgrades.
+  password: ''
+  persistence:
+    size: 8Gi
+    # Empty uses the cluster default StorageClass.
+    storageClass: ''
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# Used when postgresql.enabled is false. The user needs CREATEDB because
+# Backstage creates one database per plugin.
+externalDatabase:
+  host: ''
+  port: 5432
+  username: ''
+  # Secret holding the password, under the key below.
+  existingSecret: ''
+  existingSecretPasswordKey: password

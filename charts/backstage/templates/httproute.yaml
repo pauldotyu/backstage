@@ -1,0 +1,48 @@
+{{- if .Values.gateway.enabled }}
+{{- $tls := .Values.gateway.tls.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "backstage.fullname" . }}
+  labels:
+    {{- include "backstage.labels" . | nindent 4 }}
+    {{- include "backstage.selectorLabels" . | nindent 4 }}
+spec:
+  parentRefs:
+    {{- include "backstage.gatewayParentRef" (dict "ctx" . "section" (ternary .Values.gateway.tls.listenerName .Values.gateway.http.listenerName $tls)) | nindent 4 }}
+  {{- with .Values.gateway.host }}
+  hostnames:
+    - {{ . | quote }}
+  {{- end }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ include "backstage.fullname" . }}
+          port: {{ .Values.service.port }}
+{{- if and $tls .Values.gateway.http.redirectToHttps }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "backstage.fullname" . }}-https-redirect
+  labels:
+    {{- include "backstage.labels" . | nindent 4 }}
+    {{- include "backstage.selectorLabels" . | nindent 4 }}
+spec:
+  parentRefs:
+    {{- include "backstage.gatewayParentRef" (dict "ctx" . "section" .Values.gateway.http.listenerName) | nindent 4 }}
+  {{- with .Values.gateway.host }}
+  hostnames:
+    - {{ . | quote }}
+  {{- end }}
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+{{- end }}
+{{- end }}

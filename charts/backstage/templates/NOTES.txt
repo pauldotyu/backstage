@@ -1,0 +1,31 @@
+Backstage is deploying to namespace {{ .Release.Namespace }}.
+{{- $scheme := ternary "https" "http" .Values.gateway.tls.enabled }}
+
+{{- if and .Values.gateway.enabled .Values.gateway.host }}
+
+URL: {{ $scheme }}://{{ .Values.gateway.host }}
+{{- if .Values.gateway.create }}
+
+Gateway address (point a DNS A record for {{ .Values.gateway.host }} here):
+  kubectl -n {{ .Release.Namespace }} get gateway {{ include "backstage.gatewayName" . }} -o jsonpath='{.status.addresses[0].value}'
+{{- end }}
+{{- if and .Values.gateway.tls.enabled .Values.gateway.create .Values.gateway.tls.certManager.enabled }}
+
+Certificate status:
+  kubectl -n {{ .Release.Namespace }} get certificate {{ include "backstage.fullname" . }}
+{{- end }}
+{{- else }}
+
+Port-forward to reach it locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "backstage.fullname" . }} 7007:{{ .Values.service.port }}
+  open http://localhost:7007
+{{- end }}
+
+app.baseUrl:     {{ .Values.appConfig.app.baseUrl | default "(not set)" }}
+backend.baseUrl: {{ .Values.appConfig.backend.baseUrl | default "(not set)" }}
+
+Microsoft Entra redirect URI to register on the app registration:
+  {{ .Values.appConfig.backend.baseUrl | default "<backend.baseUrl>" }}/api/auth/microsoft/handler/frame
+
+Logs:
+  kubectl -n {{ .Release.Namespace }} logs deploy/{{ include "backstage.fullname" . }} -f

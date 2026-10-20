@@ -1,0 +1,25 @@
+# Example cert-manager ClusterIssuer for Let's Encrypt using Azure DNS (DNS01)
+# with workload identity. Assumes cert-manager runs with the
+# azure.workload.identity/use pod label and its service account is federated
+# to a managed identity that has DNS Zone Contributor on the zone.
+#
+#   kubectl apply -f charts/backstage/examples/cluster-issuer-azure-dns.yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: <you@example.com>
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+      - dns01:
+          azureDNS:
+            subscriptionID: <subscription-id>
+            resourceGroupName: <dns-zone-resource-group>
+            hostedZoneName: <dns-zone-name>
+            environment: AzurePublicCloud
+            managedIdentity:
+              clientID: <cert-manager-identity-client-id>
