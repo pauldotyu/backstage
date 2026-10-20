@@ -135,11 +135,28 @@ Ingress uses the Kubernetes Gateway API. The defaults target the AKS application
 - An HTTP-to-HTTPS redirect route.
 - A cert-manager `Certificate` for the HTTPS listener's Secret.
 
-The `Certificate` is created directly, so cert-manager's Gateway API integration doesn't need to be enabled. `charts/backstage/examples/cluster-issuer-azure-dns.yaml` is an example Let's Encrypt ClusterIssuer that uses Azure DNS with workload identity. To attach to a shared Gateway instead, set `gateway.create=false` with `gateway.name` and `gateway.namespace`.
+The `Certificate` is created directly, so cert-manager's Gateway API integration doesn't need to be enabled. To attach to a shared Gateway instead, set `gateway.create=false` with `gateway.name` and `gateway.namespace`.
+
+### TLS prerequisites
+
+The chart assumes cert-manager is installed and a ClusterIssuer already exists. Set its name in `gateway.tls.certManager.issuerRef.name`. To find it:
 
 ```sh
-kubectl apply -f charts/backstage/examples/cluster-issuer-azure-dns.yaml   # after filling in placeholders
+kubectl get clusterissuers
+```
 
+If cert-manager isn't installed, follow [Deploy cert-manager on Azure Kubernetes Service (AKS) and use Let's Encrypt to sign a certificate for an HTTPS website](https://cert-manager.io/docs/tutorials/getting-started-aks-letsencrypt/). It covers the install, the workload identity setup for Azure DNS, and creating a ClusterIssuer.
+
+If cert-manager is installed but there's no ClusterIssuer, create one. `charts/backstage/examples/cluster-issuer-azure-dns.yaml` is a Let's Encrypt ClusterIssuer that solves DNS01 challenges against Azure DNS with workload identity. It requires cert-manager's service account to be federated to a managed identity with DNS Zone Contributor on the zone. Fill in the placeholders, then apply it:
+
+```sh
+kubectl apply -f charts/backstage/examples/cluster-issuer-azure-dns.yaml
+kubectl get clusterissuer letsencrypt   # READY should be True
+```
+
+### Install
+
+```sh
 kubectl create namespace backstage
 kubectl -n backstage create secret generic backstage-secrets \
   --from-literal=AUTH_MICROSOFT_CLIENT_SECRET='<client-secret>' \
