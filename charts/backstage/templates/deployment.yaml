@@ -38,10 +38,13 @@ spec:
         - name: wait-for-postgresql
           image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
           imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
+          # Pass -U and -d explicitly: uid 1000 has no passwd entry in the
+          # postgres image, so libpq can't derive a default user and pg_isready
+          # reports "no attempt" without connecting.
           command:
             - sh
             - -c
-            - until pg_isready -h {{ $pg }} -p 5432; do echo waiting for postgresql; sleep 2; done
+            - until pg_isready -h {{ $pg }} -p 5432 -U {{ .Values.postgresql.username | quote }} -d postgres; do echo waiting for postgresql; sleep 2; done
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
       {{- end }}
