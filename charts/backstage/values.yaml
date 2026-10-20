@@ -1,5 +1,13 @@
 replicaCount: 1
 
+# maxSurge 0 stops the old pod before starting a new one, so two backends never
+# run database migrations concurrently during a rollout.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+
 image:
   repository: ghcr.io/pauldotyu/backstage
   # Defaults to the chart appVersion. Charts published from CI pin appVersion

@@ -6,7 +6,10 @@ metadata:
   name: {{ include "backstage.gatewayName" . }}
   labels:
     {{- include "backstage.labels" . | nindent 4 }}
-    {{- include "backstage.selectorLabels" . | nindent 4 }}
+    {{- /* Istio copies Gateway labels onto its gateway pods, so these must not match the backend Service selector. */}}
+    app.kubernetes.io/name: {{ include "backstage.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: gateway
   {{- with .Values.gateway.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

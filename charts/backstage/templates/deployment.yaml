@@ -8,6 +8,9 @@ metadata:
     {{- include "backstage.selectorLabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    {{- $strategy := .Values.strategy | default (dict "type" "RollingUpdate" "rollingUpdate" (dict "maxSurge" 0 "maxUnavailable" 1)) }}
+    {{- toYaml $strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "backstage.selectorLabels" . | nindent 6 }}
