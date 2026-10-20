@@ -1,4 +1,4 @@
-name: Container image
+name: Container image and Helm chart
 
 on:
   push:
@@ -67,3 +67,44 @@ jobs:
       - run: |
           helm lint charts/backstage
           helm lint charts/backstage -f charts/backstage/examples/values-entra.yaml
+
+  publish-chart:
+    if: github.event_name != 'pull_request'
+    needs: [build, helm-lint]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+
+      - name: Compute chart version
+        id: version
+        run: |
+          base=$(yq '.version' charts/backstage/Chart.yaml)
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            app_version="$version"
+          else
+            app_version="sha-${GITHUB_SHA::7}"
+            version="${base}-${app_version}"
+          fi
+          {
+            echo "version=$version"
+            echo "app_version=$app_version"
+            echo "owner=${GITHUB_REPOSITORY_OWNER,,}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Package chart
+        run: |
+          helm package charts/backstage --destination dist \
+            --version '${{ steps.version.outputs.version }}' \
+            --app-version '${{ steps.version.outputs.app_version }}'
+
+      - name: Push chart to GHCR
+        run: |
+          echo '${{ secrets.GITHUB_TOKEN }}' | helm registry login ${{ env.REGISTRY }} \
+            --username '${{ github.actor }}' --password-stdin
+          helm push dist/backstage-${{ steps.version.outputs.version }}.tgz \
+            oci://${{ env.REGISTRY }}/${{ steps.version.outputs.owner }}/charts

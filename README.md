@@ -122,7 +122,14 @@ yarn build:all  # Build all workspaces
 
 ## Deploy to AKS with Helm
 
-The `Container image` workflow builds the root `Dockerfile` and pushes `ghcr.io/<owner>/backstage` on every push to `main` (`latest` and `sha-<commit>` tags) and on `v*` tags. Pull requests build without pushing. The first push creates a private GHCR package; make it public or add an `imagePullSecrets` entry.
+The `Container image and Helm chart` workflow builds the root `Dockerfile` and pushes `ghcr.io/<owner>/backstage` on every push to `main` (`latest` and `sha-<commit>` tags) and on `v*` tags. Pull requests build and lint without pushing.
+
+After the image is pushed, the workflow packages `charts/backstage` and pushes it as an OCI artifact to `oci://ghcr.io/<owner>/charts/backstage`. Each chart version pins `appVersion`, and therefore the default image tag, to the image built from the same commit:
+
+- Push to `main`: chart `<Chart.yaml version>-sha-<commit>` with image `sha-<commit>`. Helm treats this as a pre-release, so pass `--version` explicitly (or `--devel`).
+- Tag `v1.2.3`: chart `1.2.3` with image `1.2.3`.
+
+The first push creates private GHCR packages for the image and chart. Make them public, or run `helm registry login ghcr.io` before installing and add an `imagePullSecrets` entry for the image.
 
 To build locally: `docker build -t backstage .`
 
@@ -165,9 +172,13 @@ kubectl -n backstage create secret generic backstage-secrets \
 cp charts/backstage/examples/values-entra.yaml values-entra.local.yaml
 # Fill in tenant, client, group IDs, and host in values-entra.local.yaml
 
-helm upgrade --install backstage ./charts/backstage -n backstage \
-  -f values-entra.local.yaml \
-  --set image.tag=sha-<commit>
+helm upgrade --install backstage oci://ghcr.io/<owner>/charts/backstage -n backstage \
+  --version <chart-version> \
+  -f values-entra.local.yaml
+
+# Or install from this checkout. Chart.yaml appVersion is `latest`, so pin the image:
+# helm upgrade --install backstage ./charts/backstage -n backstage \
+#   -f values-entra.local.yaml --set image.tag=sha-<commit>
 
 # Point a DNS A record for the host at the Gateway address
 kubectl -n backstage get gateway backstage -o jsonpath='{.status.addresses[0].value}'
