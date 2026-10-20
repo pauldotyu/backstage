@@ -1,5 +1,5 @@
 app:
-  title: Scaffolded Backstage App
+  title: Demo Backstage App
   baseUrl: http://localhost:3000
 
   # Enable all packages by default, this will discover packages from packages/app/package.json
@@ -197,6 +197,12 @@ catalog:
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
     #   rules:
     #     - allow: [User, Group]
+
+  locations:
+    - type: url
+      target: https://github.com/pauldotyu/backstage/blob/main/templates/agent-environments/template.yaml
+      rules:
+        - allow: [Template]
 
 kubernetes:
   # see https://backstage.io/docs/features/kubernetes/configuration for kubernetes configuration options

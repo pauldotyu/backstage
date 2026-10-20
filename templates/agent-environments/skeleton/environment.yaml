@@ -1,0 +1,13 @@
+apiVersion: platform.example.org/v1alpha1
+kind: XAgentEnvironment
+metadata:
+  name: ${{ values.team }}-${{ values.project }}-${{ values.environment }}
+  namespace: ${{ values.team }}
+spec:
+  parameters:
+    team: ${{ values.team | dump }}
+    project: ${{ values.project | dump }}
+    environment: ${{ values.environment | dump }}
+    location: ${{ values.location | dump }}
+    costCenter: ${{ values.costCenter | dump }}
+    requesterObjectId: ${{ values.requesterObjectId | dump }}

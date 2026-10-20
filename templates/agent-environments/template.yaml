@@ -1,0 +1,88 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: agent-environment
+  title: Request an agent environment
+  description: Request an agent environment on Azure
+spec:
+  owner: group:default/platform-team
+  type: resource
+  parameters:
+    - title: Environment details
+      required:
+        - team
+        - project
+        - environment
+        - location
+        - costCenter
+      properties:
+        team:
+          title: Team
+          type: string
+          description: The team requesting the environment
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+        project:
+          title: Project
+          type: string
+          description: The project associated with the environment
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+        environment:
+          title: Environment
+          type: string
+          description: The environment name (e.g., dev, staging, prod)
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+        location:
+          title: Region
+          type: string
+          description: The Azure region where the environment will be deployed
+          default: westus3
+          enum:
+            - westus3
+            - eastus
+            - centralus
+        costCenter:
+          title: Cost Center
+          type: string
+          description: The cost center associated with the environment
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+  steps:
+    - id: render
+      name: Generate environment request
+      action: fetch:template
+      input:
+        url: ./skeleton
+        targetPath: ./request
+        values:
+          team: ${{ parameters.team }}
+          project: ${{ parameters.project }}
+          environment: ${{ parameters.environment }}
+          location: ${{ parameters.location }}
+          costCenter: ${{ parameters.costCenter }}
+          requesterObjectId: ${{ user.entity.metadata.annotations["graph.microsoft.com/user-id"] }}
+    - id: publish
+      name: Open environment request PR
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
+        branchName: request-agent-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
+        title: "Request agent environment: ${{ parameters.environment }}"
+        description: |
+          Request an agent environment through the Platform API.
+          Environment name: ${{ parameters.environment }}
+          Location: ${{ parameters.location }}
+          Cost Center: ${{ parameters.costCenter }}
+          Requested by: ${{ user.ref }}
+        sourcePath: ./request
+        targetPath: requests/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}
+  output:
+    links:
+      - title: Review environment request
+        url: ${{ steps.publish.output.remoteUrl }}
