@@ -42,13 +42,15 @@ spec:
         confirmEnvironmentIdentifier:
           title: I confirm the entered team/project/environment is the exact environment identifier I intend to delete
           type: boolean
-          const: true
           default: false
+          not:
+            enum: [false]
         acknowledgeDestruction:
           title: I understand merging the removal PR authorizes irreversible teardown of this environment and may permanently delete its data
           type: boolean
-          const: true
           default: false
+          not:
+            enum: [false]
   steps:
     - id: verify
       name: Verify request file exists on main (missing file stops the task)
