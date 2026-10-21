@@ -132,6 +132,39 @@ The [delete template](templates/delete-agent-environment/template.yaml) removes 
 
 This is an inventory of accepted requests, not live deployment status. A visible entry does not mean provisioning succeeded; a removed entry does not confirm teardown completed. Readiness, actual resource IDs, endpoints, and retaining a **Deleting** entry until teardown finishes need a provisioning-status integration. Existing environments are not backfilled automatically: add descriptors for their existing requests to the same catalog directory if they should appear.
 
+## Scaffold an Agent Framework application
+
+The [application template](templates/create-maf-app/template.yaml) creates a new GitHub repository from [pauldotyu/agent-framework-with-local-llms](https://github.com/pauldotyu/agent-framework-with-local-llms), then registers the application as a requester-owned Backstage `Component`.
+
+Only the workflow lives in this repository:
+
+```text
+templates/
+  create-maf-app/
+    template.yaml
+```
+
+There is no local application skeleton. The workflow:
+
+1. Copies the starter repository's current `main` contents into `./output` using `fetch:plain`. Application files are not processed as templates.
+2. Uses `catalog:write` to add a root `catalog-info.yaml` containing the chosen component name, description, GitHub project annotation, and `${{ user.ref }}` as owner.
+3. Publishes `./output` to a new repository using `publish:github`. The requester chooses the repository location and public or private visibility; private is the default.
+4. Registers the new repository's catalog descriptor immediately using `catalog:register`. Unlike the infrastructure request flow, there is no unmerged PR to wait for.
+
+After pushing this template to `main`, register this URL once through Backstage's catalog import page so it appears under **Create**:
+
+```text
+https://github.com/pauldotyu/backstage/blob/main/templates/create-maf-app/template.yaml
+```
+
+If you already discover template files automatically, let that discovery ingest it instead. No new hardcoded `catalog.locations` entry is added for this template or for the repositories it creates. With an in-memory catalog database, runtime registrations are lost on restart; use the deployed persistent database or configure discovery for durable re-ingestion.
+
+The configured GitHub credentials must be able to create repositories under the selected owner, push their contents, and read the resulting descriptors, including private repositories. Catalog ownership does not grant repository access. The requester must resolve to an imported Backstage `User`.
+
+The starter is a Python application, not Node.js. Its current `pyproject.toml` requires Python 3.14 or later, despite its README listing Python 3.12 or later. After creation, clone the new repository and follow its setup instructions for `uv`, a local model server, and optional observability services. The workflow does not run the application, install dependencies, or provision infrastructure.
+
+Starter files, Python project metadata, and the lockfile are copied unchanged; the component name identifies the catalog entry, while the repository name is selected separately. Later starter changes are not automatically applied to previously created repositories.
+
 ## Troubleshooting
 
 - **Microsoft provider is missing or not configured:** Check that the companion setup generated `app-config.local.yaml` in this repository's root and that `auth.environment` is `development`. Restart Backstage after generating or changing the file.

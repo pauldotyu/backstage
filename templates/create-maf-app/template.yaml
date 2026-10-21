@@ -1,0 +1,92 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-maf-app
+  title: Create a Microsoft Agent Framework application
+  description: Create a repository from the template repo and register it as a Component
+spec:
+  owner: group:default/backstage-admins
+  type: service
+  parameters:
+    - title: Application details
+      required:
+        - name
+        - description
+      properties:
+        name:
+          title: Component name
+          type: string
+          description: Unique name for the application in the Backstage catalog
+          ui:field: EntityNamePicker
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          default: Microsoft Agent Framework application
+          minLength: 1
+    - title: Repository details
+      required:
+        - repoUrl
+        - visibility
+      properties:
+        repoUrl:
+          title: New repository location
+          type: string
+          description: Choose a new repository name under an owner your Backstage GitHub credentials can access
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+        visibility:
+          title: Repository visibility
+          type: string
+          default: private
+          enum:
+            - private
+            - public
+  steps:
+    - id: fetch
+      name: Copy Agent Framework starter
+      action: fetch:plain
+      input:
+        url: https://github.com/pauldotyu/agent-framework-with-local-llms/tree/main
+        targetPath: ./output
+    - id: catalog
+      name: Generate requester-owned catalog component
+      action: catalog:write
+      input:
+        filePath: ./output/catalog-info.yaml
+        entity:
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.name }}
+            description: ${{ parameters.description }}
+            annotations:
+              github.com/project-slug: ${{ parameters.repoUrl | projectSlug }}
+          spec:
+            type: service
+            lifecycle: experimental
+            owner: ${{ user.ref }}
+    - id: publish
+      name: Create application repository
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        repoVisibility: ${{ parameters.visibility }}
+        defaultBranch: main
+        sourcePath: ./output
+    - id: register
+      name: Register application in the catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+  output:
+    links:
+      - title: Application repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open application in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
