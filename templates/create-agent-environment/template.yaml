@@ -68,6 +68,7 @@ spec:
           costCenter: ${{ parameters.costCenter }}
           requesterObjectId: ${{ user.entity.metadata.annotations["graph.microsoft.com/user-id"] }}
           owner: ${{ user.ref }}
+          backstageBaseUrl: ${{ backstageBaseUrl }}
     - id: publish
       name: Open agent environment request PR
       action: publish:github:pull-request

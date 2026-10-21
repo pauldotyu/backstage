@@ -130,6 +130,12 @@ To enable this flow:
 
 The [delete template](templates/delete-agent-environment/template.yaml) removes both the request and its matching catalog descriptor in one PR. It still supports older requests without a descriptor. After merge and catalog processing, Backstage removes the inventory entry using its default orphan-deletion behavior. If you override `catalog.orphanStrategy` to `keep`, removed entries remain as orphans instead.
 
+Generated Resources include a **Request deletion** link on their entity page. It opens the registered `delete-agent-environment` template with team, project, and environment prefilled through the URL's `formData` parameter. Both confirmation checkboxes remain unchecked; opening the link does not submit the task or delete infrastructure. The template must be registered in the `default` catalog namespace.
+
+The link uses the existing `app.baseUrl` setting, exposed as the `backstageBaseUrl` scaffolder global by a [backend module](packages/backend/src/scaffolderTemplateGlobals.ts). No domain is hardcoded in the skeleton, and requesters do not need to enter a portal URL. Local development and deployed environments use their own configured base URL; trailing slashes are removed before constructing the link. Deploy the backend module and refresh the create template before generating new requests.
+
+Backstage catalog link validation requires an absolute URL, so generated links store the base URL in effect when the request is created. Changing `app.baseUrl` does not rewrite existing descriptors: update those in the platform repository if the portal moves. If the scaffolder route changes, also update the [catalog skeleton](templates/create-agent-environment/skeleton/catalog/agent-environments). Existing descriptors without the link need it added in Git once and are refreshed through catalog processing.
+
 This is an inventory of accepted requests, not live deployment status. A visible entry does not mean provisioning succeeded; a removed entry does not confirm teardown completed. Readiness, actual resource IDs, endpoints, and retaining a **Deleting** entry until teardown finishes need a provisioning-status integration. Existing environments are not backfilled automatically: add descriptors for their existing requests to the same catalog directory if they should appear.
 
 ## Scaffold an Agent Framework application

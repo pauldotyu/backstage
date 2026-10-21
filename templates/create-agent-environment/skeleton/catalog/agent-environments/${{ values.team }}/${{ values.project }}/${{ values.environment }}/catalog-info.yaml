@@ -13,6 +13,9 @@ metadata:
   links:
     - url: https://github.com/pauldotyu/crossplane-opentofu-demo/blob/main/requests/agent-environments/${{ values.team }}/${{ values.project }}/${{ values.environment }}/environment.yaml
       title: Environment request
+    - url: >-
+        ${{ values.backstageBaseUrl }}/create/templates/default/delete-agent-environment?formData=${{ { team: values.team, project: values.project, environment: values.environment } | dump | urlencode }}
+      title: Request deletion
 spec:
   type: agent-environment
   owner: ${{ values.owner | dump }}
