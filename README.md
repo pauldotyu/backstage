@@ -103,6 +103,8 @@ The default local database is in-memory SQLite, so its data is lost when the bac
 
 ## Agent environment inventory
 
+The catalog defaults to the **Resource** kind through the `catalog-filter:catalog/kind` extension in [app-config.yaml](app-config.yaml). Other kinds remain selectable, and an explicit kind filter in the URL overrides this default.
+
 The [create template](templates/create-agent-environment/template.yaml) renders two files into the same PR in `pauldotyu/crossplane-opentofu-demo`:
 
 ```text
