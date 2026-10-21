@@ -1,0 +1,94 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: delete-agent-environment
+  title: Request deletion of an agent environment
+  description: Open a removal PR for human review. Merging it authorizes irreversible infrastructure teardown.
+spec:
+  owner: group:default/backstage-admins
+  type: resource
+  parameters:
+    - title: Identify the environment to delete
+      description: Enter the existing request identifier, not the Kubernetes namespace or Argo CD Application name.
+      required:
+        - team
+        - project
+        - environment
+      properties:
+        team:
+          title: Team
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+        project:
+          title: Project
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+        environment:
+          title: Environment
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+    - title: Confirm deletion request
+      description: Review the team, project, and environment in the final review before submitting. This task creates a PR only, not a completed deletion.
+      required:
+        - confirmEnvironmentIdentifier
+        - acknowledgeDestruction
+      properties:
+        confirmEnvironmentIdentifier:
+          title: I confirm the entered team/project/environment is the exact environment identifier I intend to delete
+          type: boolean
+          const: true
+          default: false
+        acknowledgeDestruction:
+          title: I understand merging the removal PR authorizes irreversible teardown of this environment and may permanently delete its data
+          type: boolean
+          const: true
+          default: false
+  steps:
+    - id: verify
+      name: Verify request file exists on main (missing file stops the task)
+      action: fetch:plain:file
+      input:
+        url: https://github.com/pauldotyu/crossplane-opentofu-demo/blob/main/requests/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
+        targetPath: deletion-check/environment.yaml
+    - id: clear
+      name: Remove local verification copy before publishing
+      action: fs:delete
+      input:
+        files:
+          - deletion-check/environment.yaml
+    - id: publish
+      name: Open environment removal PR for human review
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
+        targetBranchName: main
+        branchName: delete-agent-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
+        title: "Delete agent environment: ${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}"
+        description: |
+          Request deletion of agent environment `${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}`.
+
+          Remove exactly `requests/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml`.
+          Requested by: ${{ user.ref }}
+
+          The requester confirmed the environment identifier and acknowledged irreversible teardown and possible permanent data loss.
+          Human review and merge into protected `main` authorize deletion. Do not auto-merge.
+          After merge, the request Application prunes the XR; Crossplane/OpenTofu perform teardown.
+          A successful Backstage task means this removal PR was created, not that resources were destroyed.
+
+          Reviewers: verify the identifier, single-file deletion, ownership/authorization, backups, and active workloads before merging.
+        # Only the now-empty probe directory is serialized, never the whole workspace.
+        sourcePath: deletion-check
+        filesToDelete:
+          - requests/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
+        draft: false
+        update: false
+  output:
+    links:
+      - title: Review removal PR (environment is not yet destroyed)
+        url: ${{ steps.publish.output.remoteUrl }}

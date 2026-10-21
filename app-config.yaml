@@ -186,7 +186,7 @@ catalog:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Component, System, API, Resource, Location]
+    - allow: [Component, System, API, Resource, Location, Template]
 
     ## Uncomment these lines to add more example data
     # - type: url
@@ -197,12 +197,6 @@ catalog:
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
     #   rules:
     #     - allow: [User, Group]
-
-  locations:
-    - type: url
-      target: https://github.com/pauldotyu/backstage/blob/main/templates/agent-environments/template.yaml
-      rules:
-        - allow: [Template]
 
 kubernetes:
   # see https://backstage.io/docs/features/kubernetes/configuration for kubernetes configuration options
