@@ -2,8 +2,8 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: delete-agent-environment
-  title: Request deletion of an agent environment
-  description: Open a removal PR for human review of an agent environment. Merging it authorizes irreversible infrastructure teardown.
+  title: Request removal of agent environment
+  description: Removes an agent environment from Azure
 spec:
   owner: group:default/backstage-admins
   type: resource
