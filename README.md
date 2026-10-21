@@ -1,4 +1,4 @@
-# Backstage developer portal
+# Backstage Demo
 
 Companion code used in an upcoming blog series on building an internal developer portal with [Backstage](https://backstage.io). The series is not published yet; a link will be added here when it is available.
 
@@ -105,7 +105,7 @@ The default local database is in-memory SQLite, so its data is lost when the bac
 
 The catalog defaults to the **Resource** kind through the `catalog-filter:catalog/kind` extension in [app-config.yaml](app-config.yaml). Other kinds remain selectable, and an explicit kind filter in the URL overrides this default.
 
-The [create template](templates/create-agent-environment/template.yaml) renders two files into the same PR in `pauldotyu/crossplane-opentofu-demo`:
+The [create template](templates/create-agent-environment/template.yaml) renders two files into the same PR in `pauldotyu/platform`:
 
 ```text
 requests/agent-environments/<team>/<project>/<environment>/environment.yaml
@@ -123,7 +123,7 @@ The shared [app configuration](app-config.yaml) registers the [environment disco
 To enable this flow:
 
 1. Push the updated templates and discovery location to `main` in this repository so Backstage can read them.
-2. Ensure `GITHUB_TOKEN` can read both repositories and create PRs in `pauldotyu/crossplane-opentofu-demo`.
+2. Ensure `GITHUB_TOKEN` can read both repositories and create PRs in `pauldotyu/platform`.
 3. Restart Backstage to load the catalog configuration, and refresh the registered templates. If a local or deployment override sets `catalog.locations`, include the environment discovery location there too: configuration arrays are replaced, not appended.
 4. Submit a new environment request and merge its PR after review.
 5. Allow catalog processing to discover the descriptor, then open the catalog, select **Resource**, and use the **Owned** filter. Catalog processing is asynchronous; visibility is not immediate after merge.

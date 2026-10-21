@@ -73,7 +73,7 @@ spec:
       name: Open agent environment request PR
       action: publish:github:pull-request
       input:
-        repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
+        repoUrl: github.com?owner=pauldotyu&repo=platform
         targetBranchName: main
         branchName: request-agent-environment-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
         title: "Agent environment request for ${{ parameters.team }}"

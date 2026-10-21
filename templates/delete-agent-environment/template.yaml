@@ -56,7 +56,7 @@ spec:
       name: Verify request file exists on main (missing file stops the task)
       action: fetch:plain:file
       input:
-        url: https://github.com/pauldotyu/crossplane-opentofu-demo/blob/main/requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
+        url: https://github.com/pauldotyu/platform/blob/main/requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
         targetPath: deletion-check/environment.yaml
     - id: clear
       name: Remove local verification copy before publishing
@@ -68,7 +68,7 @@ spec:
       name: Open environment removal PR for human review
       action: publish:github:pull-request
       input:
-        repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
+        repoUrl: github.com?owner=pauldotyu&repo=platform
         targetBranchName: main
         branchName: delete-agent-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
         title: "Agent environment delete request for ${{ parameters.team }}"

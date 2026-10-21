@@ -7,4 +7,4 @@ spec:
   type: url
   presence: optional
   targets:
-    - https://github.com/pauldotyu/crossplane-opentofu-demo/blob/main/catalog/agent-environments/*/*/*/catalog-info.yaml
+    - https://github.com/pauldotyu/platform/blob/main/catalog/agent-environments/*/*/*/catalog-info.yaml
