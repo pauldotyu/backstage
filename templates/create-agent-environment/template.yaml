@@ -1,7 +1,7 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: agent-environment
+  name: create-agent-environment
   title: Request an agent environment
   description: Request an agent environment on Azure
 spec:
