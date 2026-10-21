@@ -2,7 +2,7 @@ apiVersion: platform.example.org/v1alpha1
 kind: XAgentEnvironment
 metadata:
   name: ${{ values.team }}-${{ values.project }}-${{ values.environment }}
-  namespace: ${{ values.team }}
+  namespace: environment-requests
 spec:
   parameters:
     team: ${{ values.team | dump }}
