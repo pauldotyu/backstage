@@ -77,6 +77,8 @@ spec:
         repoVisibility: ${{ parameters.visibility }}
         defaultBranch: main
         sourcePath: ./output
+        gitAuthorName: ${{ user.entity.spec.profile.displayName }}
+        gitAuthorEmail: ${{ user.entity.spec.profile.email }}
     - id: register
       name: Register application in the catalog
       action: catalog:register
