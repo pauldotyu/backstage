@@ -71,7 +71,7 @@ spec:
         repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
         targetBranchName: main
         branchName: delete-agent-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
-        title: "Agent environment delete request for ${{ parameters.team }}
+        title: "Agent environment delete request for ${{ parameters.team }}"
         description: |
           Request deletion of agent environment `${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}`.
 
