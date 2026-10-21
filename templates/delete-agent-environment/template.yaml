@@ -75,19 +75,22 @@ spec:
         description: |
           Request deletion of agent environment `${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}`.
 
-          Remove exactly `requests/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml`.
+          Remove `requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml`
+          and its matching `catalog/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/catalog-info.yaml`, if present.
           Requested by: ${{ user.ref }}
 
           The requester confirmed the agent environment identifier and acknowledged irreversible teardown and possible permanent data loss.
           Human review and merge into protected `main` authorize deletion. Do not auto-merge.
           After merge, the request Application prunes the XR; Crossplane/OpenTofu perform teardown.
           A successful Backstage task means this removal PR was created, not that resources were destroyed.
+          Catalog discovery removes the inventory entry after merge; this does not confirm teardown is complete.
 
-          Reviewers: verify the agent environment identifier, single-file deletion, ownership/authorization, backups, and active workloads before merging.
+          Reviewers: verify the agent environment identifier, request and catalog descriptor deletions, ownership/authorization, backups, and active workloads before merging.
         # Only the now-empty probe directory is serialized, never the whole workspace.
         sourcePath: deletion-check
         filesToDelete:
           - requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
+          - catalog/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/catalog-info.yaml
         draft: false
         update: false
   output:

@@ -185,6 +185,11 @@ catalog:
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
+  locations:
+    - type: url
+      target: https://github.com/pauldotyu/backstage/blob/main/catalog/agent-environments.yaml
+      rules:
+        - allow: [Location, Resource]
   rules:
     - allow: [Component, System, API, Resource, Location, Template]
 

@@ -13,7 +13,7 @@ Backstage brings software catalogs, ownership, documentation, and software templ
 - Microsoft Graph catalog module registered for importing Entra users and groups.
 - Plugins for the software catalog, software templates, TechDocs, search, and Kubernetes.
 
-Having a plugin installed does not mean its integration is configured. The checked-in configuration has no authentication providers, catalog sources, or Kubernetes cluster connections configured. Follow the local setup below to enable sign-in and import users and groups.
+Having a plugin installed does not mean its integration is configured. The checked-in configuration includes discovery for agent environment catalog descriptors, but has no authentication providers or Kubernetes cluster connections configured. Follow the local setup below to enable sign-in and import users and groups.
 
 ## Run locally
 
@@ -79,6 +79,8 @@ If you are not using GitHub yet, add this top-level override to `app-config.loca
 ```yaml
 integrations:
   github: []
+catalog:
+  locations: []
 ```
 
 Reapplying the companion configuration replaces local edits, including this override. Preserve any custom settings before applying and restore them afterward. Creating a `.env` file alone does not export `GITHUB_TOKEN` into your shell.
@@ -97,7 +99,36 @@ After signing in, open the catalog and select the **User** or **Group** kind to 
 
 Stop the app with `Ctrl+C`. Restart it after changing local configuration or credentials.
 
-The default local database is in-memory SQLite, so its data is lost when the backend restarts. Configured providers reimport their data, but manually registered catalog entries must be added again.
+The default local database is in-memory SQLite, so its data is lost when the backend restarts. Configured providers and locations reimport their data, but manually registered catalog entries must be added again.
+
+## Agent environment inventory
+
+The [create template](templates/create-agent-environment/template.yaml) renders two files into the same PR in `pauldotyu/crossplane-opentofu-demo`:
+
+```text
+requests/agent-environments/<team>/<project>/<environment>/environment.yaml
+catalog/agent-environments/<team>/<project>/<environment>/catalog-info.yaml
+```
+
+The request remains an `XAgentEnvironment` manifest. The separate catalog descriptor is a Backstage `Resource` of type `agent-environment`, with team, project, environment, and region labels and a link to the request. Keeping these files separate prevents the Backstage descriptor from being applied as a Kubernetes manifest.
+
+Both files live in one [skeleton tree](templates/create-agent-environment/skeleton), with templated team, project, and environment directory names. A single `fetch:template` step renders that tree into `./output` in the task workspace. The publish step uses `sourcePath: ./output`, so only its contents are committed, without an extra `output` directory in the platform repository.
+
+Ownership comes from the signed-in user's `${{ user.ref }}`, not the free-text team field or the Entra object ID. The requester must resolve to an imported Backstage `User`. Groups are not required for environment ownership, and catalog ownership does not grant infrastructure permissions.
+
+The shared [app configuration](app-config.yaml) registers the [environment discovery location](catalog/agent-environments.yaml). Backstage's built-in GitHub URL reader finds matching descriptors on the target repository's `main` branch during catalog processing. No extra discovery plugin or per-environment registration is required. The optional target supports an empty inventory, including after the last descriptor is deleted.
+
+To enable this flow:
+
+1. Push the updated templates and discovery location to `main` in this repository so Backstage can read them.
+2. Ensure `GITHUB_TOKEN` can read both repositories and create PRs in `pauldotyu/crossplane-opentofu-demo`.
+3. Restart Backstage to load the catalog configuration, and refresh the registered templates. If a local or deployment override sets `catalog.locations`, include the environment discovery location there too: configuration arrays are replaced, not appended.
+4. Submit a new environment request and merge its PR after review.
+5. Allow catalog processing to discover the descriptor, then open the catalog, select **Resource**, and use the **Owned** filter. Catalog processing is asynchronous; visibility is not immediate after merge.
+
+The [delete template](templates/delete-agent-environment/template.yaml) removes both the request and its matching catalog descriptor in one PR. It still supports older requests without a descriptor. After merge and catalog processing, Backstage removes the inventory entry using its default orphan-deletion behavior. If you override `catalog.orphanStrategy` to `keep`, removed entries remain as orphans instead.
+
+This is an inventory of accepted requests, not live deployment status. A visible entry does not mean provisioning succeeded; a removed entry does not confirm teardown completed. Readiness, actual resource IDs, endpoints, and retaining a **Deleting** entry until teardown finishes need a provisioning-status integration. Existing environments are not backfilled automatically: add descriptors for their existing requests to the same catalog directory if they should appear.
 
 ## Troubleshooting
 

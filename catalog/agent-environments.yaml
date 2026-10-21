@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: agent-environments
+  description: Agent environment catalog descriptors from accepted infrastructure requests
+spec:
+  type: url
+  presence: optional
+  targets:
+    - https://github.com/pauldotyu/crossplane-opentofu-demo/blob/main/catalog/agent-environments/*/*/*/catalog-info.yaml

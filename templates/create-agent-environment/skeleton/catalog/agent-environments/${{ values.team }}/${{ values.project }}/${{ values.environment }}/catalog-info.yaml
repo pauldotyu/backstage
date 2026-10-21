@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: ${{ values.team }}-${{ values.project }}-${{ values.environment }}
+  description: Agent environment requested through Backstage
+  labels:
+    team: ${{ values.team | dump }}
+    project: ${{ values.project | dump }}
+    environment: ${{ values.environment | dump }}
+    region: ${{ values.location | dump }}
+  annotations:
+    backstage.io/source-template: template:default/create-agent-environment
+  links:
+    - url: https://github.com/pauldotyu/crossplane-opentofu-demo/blob/main/requests/agent-environments/${{ values.team }}/${{ values.project }}/${{ values.environment }}/environment.yaml
+      title: Environment request
+spec:
+  type: agent-environment
+  owner: ${{ values.owner | dump }}

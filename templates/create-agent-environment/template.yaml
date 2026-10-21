@@ -55,11 +55,11 @@ spec:
           pattern: '^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$'
   steps:
     - id: render
-      name: Generate environment request
+      name: Generate agent environment request and catalog resource
       action: fetch:template
       input:
         url: ./skeleton
-        targetPath: ./request
+        targetPath: ./output
         values:
           team: ${{ parameters.team }}
           project: ${{ parameters.project }}
@@ -67,11 +67,13 @@ spec:
           location: ${{ parameters.location }}
           costCenter: ${{ parameters.costCenter }}
           requesterObjectId: ${{ user.entity.metadata.annotations["graph.microsoft.com/user-id"] }}
+          owner: ${{ user.ref }}
     - id: publish
       name: Open agent environment request PR
       action: publish:github:pull-request
       input:
         repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
+        targetBranchName: main
         branchName: request-agent-environment-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
         title: "Agent environment request for ${{ parameters.team }}"
         description: |
@@ -81,8 +83,10 @@ spec:
           Location: ${{ parameters.location }}
           Cost Center: ${{ parameters.costCenter }}
           Requested by: ${{ user.ref }}
-        sourcePath: ./request
-        targetPath: requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}
+
+          Includes a catalog resource owned by the requester. Backstage discovers it after merge into main.
+          Catalog visibility records an accepted request, not a successful deployment.
+        sourcePath: ./output
   output:
     links:
       - title: Review agent environment request
