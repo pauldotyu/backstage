@@ -68,21 +68,22 @@ spec:
           costCenter: ${{ parameters.costCenter }}
           requesterObjectId: ${{ user.entity.metadata.annotations["graph.microsoft.com/user-id"] }}
     - id: publish
-      name: Open environment request PR
+      name: Open agent environment request PR
       action: publish:github:pull-request
       input:
         repoUrl: github.com?owner=pauldotyu&repo=crossplane-opentofu-demo
-        branchName: request-agent-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
-        title: "Request agent environment: ${{ parameters.environment }}"
+        branchName: request-agent-environment-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
+        title: "Agent environment request for ${{ parameters.team }}"
         description: |
-          Request an agent environment through the Platform API.
+          ${{ parameters.team }} requesting an agent environment with the following details:
+          Project: ${{ parameters.project }}
           Environment name: ${{ parameters.environment }}
           Location: ${{ parameters.location }}
           Cost Center: ${{ parameters.costCenter }}
           Requested by: ${{ user.ref }}
         sourcePath: ./request
-        targetPath: requests/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}
+        targetPath: requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}
   output:
     links:
-      - title: Review environment request
+      - title: Review agent environment request
         url: ${{ steps.publish.output.remoteUrl }}
