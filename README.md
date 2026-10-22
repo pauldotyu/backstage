@@ -136,7 +136,32 @@ The link uses the existing `app.baseUrl` setting, exposed as the `backstageBaseU
 
 Backstage catalog link validation requires an absolute URL, so generated links store the base URL in effect when the request is created. Changing `app.baseUrl` does not rewrite existing descriptors: update those in the platform repository if the portal moves. If the scaffolder route changes, also update the [catalog skeleton](templates/create-agent-environment/skeleton/catalog/agent-environments). Existing descriptors without the link need it added in Git once and are refreshed through catalog processing.
 
-This is an inventory of accepted requests, not live deployment status. A visible entry does not mean provisioning succeeded; a removed entry does not confirm teardown completed. Readiness, actual resource IDs, endpoints, and retaining a **Deleting** entry until teardown finishes need a provisioning-status integration. Existing environments are not backfilled automatically: add descriptors for their existing requests to the same catalog directory if they should appear.
+A visible catalog entry records an accepted request, not successful provisioning. A removed entry does not confirm teardown completed. Existing environments are not backfilled automatically: add descriptors for their existing requests to the same catalog directory if they should appear.
+
+### Live deployment details
+
+The existing Backstage **Kubernetes** plugin displays the live `XAgentEnvironment` outputs. Open the environment's **Resource** page, select **Kubernetes**, expand the cluster, and expand the `XAgentEnvironment`. Its built-in status table shows the application namespace, service account, client ID, model and telemetry endpoints, resource group ID, and conditions. Clicking the resource name opens the full object, including a YAML view. No custom frontend or additional plugin is required.
+
+The deployment settings in [values-entra.yaml](charts/backstage/examples/values-entra.yaml) configure the cluster connection and register `platform.example.org/v1alpha1/xagentenvironments` under `appConfig.kubernetes.customResources`. Customize that one file for your deployment. If you already maintain a customized deployment values file, incorporate these settings there instead.
+
+For existing descriptors, add the same annotations in the platform repository. For `t1-p1-dev`:
+
+```yaml
+metadata:
+  annotations:
+    backstage.io/kubernetes-namespace: agent-environments
+    backstage.io/kubernetes-label-selector: crossplane.io/composite=t1-p1-dev
+```
+
+New descriptors include these annotations automatically. Existing descriptors need them added in Git and refreshed through catalog processing. `agent-environments` is the namespace containing the request, not the application namespace in `status.namespace`.
+
+The example assumes Backstage and the environments share a cluster. It uses the pod's service account credentials, with no token stored in Git. `objectTypes: []` and `skipMetricsLookup: true` limit fetching to custom resources, excluding unrelated workloads and Secrets. For other clusters or local development, configure the connection using the [Kubernetes documentation](https://backstage.io/docs/features/kubernetes/configuration/); the in-cluster settings do not authenticate `yarn start`.
+
+`agentEnvironments.enabled` creates only a Role and RoleBinding granting `get` and `list` access to `xagentenvironments` in the configured namespace, which must already exist. The installer needs permission to create both there. Cluster configuration remains explicit under `appConfig.kubernetes`. If you change the namespace, update the catalog annotations too.
+
+Read `status.conditions` to determine provisioning readiness. The plugin's generic pod-health indicators do not establish Crossplane readiness, and populated outputs do not imply `Ready=True`. The plugin handles fetching and refresh; outputs are not copied into Git or the catalog database.
+
+Catalog ownership is not authorization. The current allow-all permission policy lets authenticated portal users access these resources, not just the requester. Configure backend authorization before relying on requester-only visibility. The standard resource viewer exposes the entire custom resource; do not put secrets in its spec or status. Removing the catalog descriptor removes the page even if infrastructure teardown is still running.
 
 ## Scaffold an Agent Framework application
 

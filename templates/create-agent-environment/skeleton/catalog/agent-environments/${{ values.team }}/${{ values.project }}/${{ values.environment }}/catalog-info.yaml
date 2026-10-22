@@ -10,6 +10,8 @@ metadata:
     region: ${{ values.location | dump }}
   annotations:
     backstage.io/source-template: template:default/create-agent-environment
+    backstage.io/kubernetes-namespace: agent-environments
+    backstage.io/kubernetes-label-selector: crossplane.io/composite=${{ values.team }}-${{ values.project }}-${{ values.environment }}
   links:
     - url: https://github.com/pauldotyu/platform/blob/main/requests/agent-environments/${{ values.team }}/${{ values.project }}/${{ values.environment }}/environment.yaml
       title: Environment request
