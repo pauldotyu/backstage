@@ -27,6 +27,13 @@ serviceAccount:
   name: ''
   annotations: {}
 
+# Create read-only XAgentEnvironment RBAC in this existing namespace.
+# Configure the connection separately under appConfig.kubernetes.
+# See examples/values-entra.yaml.
+agentEnvironments:
+  enabled: false
+  namespace: agent-environments
+
 podAnnotations: {}
 podLabels: {}
 
