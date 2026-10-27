@@ -60,6 +60,48 @@ spec:
           minLength: 1
           maxLength: 20
           pattern: '^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$'
+    - title: Application delivery (optional)
+      description: Leave blank to get an empty environment. Fill in to have the platform deploy your Helm chart into it.
+      properties:
+        deliveryRepoUrl:
+          title: Chart repository
+          type: string
+          description: GitHub repository that contains your Helm chart.
+          pattern: '^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
+          ui:help: "For example: https://github.com/pauldotyu/fourth-coffee"
+        deliveryPath:
+          title: Chart path
+          type: string
+          pattern: '^[A-Za-z0-9_./-]+$'
+          ui:help: "For example: deploy/helm/fourth-coffee"
+        deliveryRevision:
+          title: Branch or tag
+          type: string
+          default: main
+        agents:
+          title: Model-calling components
+          type: array
+          description: Each gets a ServiceAccount with model and telemetry access. Names must match your chart's component names.
+          default: [foundry]
+          minItems: 1
+          maxItems: 5
+          uniqueItems: true
+          items:
+            type: string
+            pattern: '^[a-z]([a-z0-9-]{0,18}[a-z0-9])?$'
+        telemetryOnly:
+          title: Telemetry-only components
+          type: array
+          description: Each gets a ServiceAccount with telemetry access only.
+          default: []
+          maxItems: 5
+          uniqueItems: true
+          items:
+            type: string
+            pattern: '^[a-z]([a-z0-9-]{0,18}[a-z0-9])?$'
+      dependencies:
+        deliveryRepoUrl:
+          required: [deliveryPath]
   steps:
     - id: render
       name: Generate agent environment request and catalog resource
@@ -77,6 +119,11 @@ spec:
           costCenter: ${{ parameters.costCenter }}
           requesterObjectId: ${{ user.entity.metadata.annotations["graph.microsoft.com/user-id"] }}
           backstageBaseUrl: ${{ backstageBaseUrl }}
+          deliveryRepoUrl: ${{ parameters.deliveryRepoUrl }}
+          deliveryPath: ${{ parameters.deliveryPath }}
+          deliveryRevision: ${{ parameters.deliveryRevision }}
+          agents: ${{ parameters.agents }}
+          telemetryOnly: ${{ parameters.telemetryOnly }}
     - id: publish
       name: Open agent environment request PR
       action: publish:github:pull-request
@@ -91,6 +138,7 @@ spec:
           Environment name: ${{ parameters.environment }}
           Location: ${{ parameters.location }}
           Cost Center: ${{ parameters.costCenter }}
+          Delivery: ${{ parameters.deliveryRepoUrl or "none" }} ${{ parameters.deliveryPath or "" }}
           Owning team: ${{ parameters.owner }}
           Requested by: ${{ user.ref }}
 
@@ -101,5 +149,5 @@ spec:
     links:
       - title: 1. Review agent environment request
         url: ${{ steps.publish.output.remoteUrl }}
-      - title: 2. Open the environment in the catalog (available after provisioning)
+      - title: 2. Open the environment in the catalog (available after merge)
         url: ${{ backstageBaseUrl }}/catalog/default/resource/${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}

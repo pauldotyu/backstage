@@ -11,3 +11,13 @@ spec:
     location: ${{ values.location | dump }}
     costCenter: ${{ values.costCenter | dump }}
     requesterObjectId: ${{ values.requesterObjectId | dump }}
+    agents: ${{ values.agents | dump }}
+{%- if values.telemetryOnly | length %}
+    telemetryOnly: ${{ values.telemetryOnly | dump }}
+{%- endif %}
+{%- if values.deliveryRepoUrl %}
+    delivery:
+      repoUrl: ${{ values.deliveryRepoUrl | dump }}
+      path: ${{ values.deliveryPath | dump }}
+      targetRevision: ${{ values.deliveryRevision | dump }}
+{%- endif %}
