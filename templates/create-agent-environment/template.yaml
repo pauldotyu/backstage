@@ -101,5 +101,5 @@ spec:
     links:
       - title: 1. Review agent environment request
         url: ${{ steps.publish.output.remoteUrl }}
-      - title: 2. Follow provisioning in the catalog (appears after merge)
+      - title: 2. Open the environment in the catalog (available after provisioning)
         url: ${{ backstageBaseUrl }}/catalog/default/resource/${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
