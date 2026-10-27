@@ -9,30 +9,19 @@ spec:
   type: resource
   parameters:
     - title: Identify the agent environment to delete
-      description: Enter the existing request identifier, not the Kubernetes namespace or Argo CD Application name.
       required:
-        - team
-        - project
-        - environment
+        - environmentRef
       properties:
-        team:
-          title: Team
+        environmentRef:
+          title: Agent environment
           type: string
-          minLength: 1
-          maxLength: 20
-          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
-        project:
-          title: Project
-          type: string
-          minLength: 1
-          maxLength: 20
-          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
-        environment:
-          title: Environment
-          type: string
-          minLength: 1
-          maxLength: 20
-          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          description: Environments owned by you or your teams.
+          ui:field: OwnedEntityPicker
+          ui:autofocus: true
+          ui:options:
+            catalogFilter:
+              kind: Resource
+              type: agent-environment
     - title: Confirm deletion request
       description: Review the team, project, and environment in the final review before submitting. This task creates a PR only, not a completed deletion.
       required:
@@ -45,18 +34,25 @@ spec:
           default: false
           not:
             enum: [false]
+          ui:help: You must confirm the environment identifier to proceed with deletion.
         acknowledgeDestruction:
           title: I understand merging the removal PR authorizes irreversible teardown of this environment and may permanently delete its data
           type: boolean
           default: false
           not:
             enum: [false]
+          ui:help: You must acknowledge the destruction to proceed with deletion.
   steps:
+    - id: lookup
+      name: Look up the environment
+      action: catalog:fetch
+      input:
+        entityRef: ${{ parameters.environmentRef }}
     - id: verify
       name: Verify request file exists on main (missing file stops the task)
       action: fetch:plain:file
       input:
-        url: https://github.com/pauldotyu/platform/blob/main/requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
+        url: https://github.com/pauldotyu/platform/blob/main/requests/agent-environments/${{ steps.lookup.output.entity.metadata.labels.team }}/${{ steps.lookup.output.entity.metadata.labels.project }}/${{ steps.lookup.output.entity.metadata.labels.environment }}/environment.yaml
         targetPath: deletion-check/environment.yaml
     - id: clear
       name: Remove local verification copy before publishing
@@ -70,13 +66,13 @@ spec:
       input:
         repoUrl: github.com?owner=pauldotyu&repo=platform
         targetBranchName: main
-        branchName: delete-agent-${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
-        title: "Agent environment delete request for ${{ parameters.team }}"
+        branchName: delete-agent-${{ steps.lookup.output.entity.metadata.labels.team }}-${{ steps.lookup.output.entity.metadata.labels.project }}-${{ steps.lookup.output.entity.metadata.labels.environment }}
+        title: "Agent environment delete request for ${{ steps.lookup.output.entity.metadata.labels.team }}"
         description: |
-          Request deletion of agent environment `${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}`.
+          Request deletion of agent environment `${{ steps.lookup.output.entity.metadata.labels.team }}/${{ steps.lookup.output.entity.metadata.labels.project }}/${{ steps.lookup.output.entity.metadata.labels.environment }}`.
 
-          Remove `requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml`
-          and its matching `catalog/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/catalog-info.yaml`, if present.
+          Remove `requests/agent-environments/${{ steps.lookup.output.entity.metadata.labels.team }}/${{ steps.lookup.output.entity.metadata.labels.project }}/${{ steps.lookup.output.entity.metadata.labels.environment }}/environment.yaml`
+          and its matching `catalog/agent-environments/${{ steps.lookup.output.entity.metadata.labels.team }}/${{ steps.lookup.output.entity.metadata.labels.project }}/${{ steps.lookup.output.entity.metadata.labels.environment }}/catalog-info.yaml`, if present.
           Requested by: ${{ user.ref }}
 
           The requester confirmed the agent environment identifier and acknowledged irreversible teardown and possible permanent data loss.
@@ -89,11 +85,13 @@ spec:
         # Only the now-empty probe directory is serialized, never the whole workspace.
         sourcePath: deletion-check
         filesToDelete:
-          - requests/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/environment.yaml
-          - catalog/agent-environments/${{ parameters.team }}/${{ parameters.project }}/${{ parameters.environment }}/catalog-info.yaml
+          - requests/agent-environments/${{ steps.lookup.output.entity.metadata.labels.team }}/${{ steps.lookup.output.entity.metadata.labels.project }}/${{ steps.lookup.output.entity.metadata.labels.environment }}/environment.yaml
+          - catalog/agent-environments/${{ steps.lookup.output.entity.metadata.labels.team }}/${{ steps.lookup.output.entity.metadata.labels.project }}/${{ steps.lookup.output.entity.metadata.labels.environment }}/catalog-info.yaml
         draft: false
         update: false
   output:
     links:
       - title: Review removal PR (agent environment is not yet destroyed)
         url: ${{ steps.publish.output.remoteUrl }}
+      - title: Teardown completes after merge. Check the environment's Kubernetes tab
+        url: ${{ backstageBaseUrl }}/catalog/default/resource/${{ steps.lookup.output.entity.metadata.labels.team }}-${{ steps.lookup.output.entity.metadata.labels.project }}-${{ steps.lookup.output.entity.metadata.labels.environment }}

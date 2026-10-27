@@ -10,12 +10,19 @@ spec:
   parameters:
     - title: Environment details
       required:
+        - owner
         - team
         - project
         - environment
         - location
         - costCenter
       properties:
+        owner:
+          title: Owner
+          type: string
+          description: The Backstage group that owns this environment. Only groups you belong to are listed.
+          ui:field: MyGroupsPicker
+          ui:autofocus: true
         team:
           title: Team
           type: string
@@ -61,13 +68,14 @@ spec:
         url: ./skeleton
         targetPath: ./output
         values:
+          owner: ${{ parameters.owner }}
+          requestedBy: ${{ user.ref }}
           team: ${{ parameters.team }}
           project: ${{ parameters.project }}
           environment: ${{ parameters.environment }}
           location: ${{ parameters.location }}
           costCenter: ${{ parameters.costCenter }}
           requesterObjectId: ${{ user.entity.metadata.annotations["graph.microsoft.com/user-id"] }}
-          owner: ${{ user.ref }}
           backstageBaseUrl: ${{ backstageBaseUrl }}
     - id: publish
       name: Open agent environment request PR
@@ -83,6 +91,7 @@ spec:
           Environment name: ${{ parameters.environment }}
           Location: ${{ parameters.location }}
           Cost Center: ${{ parameters.costCenter }}
+          Owning team: ${{ parameters.owner }}
           Requested by: ${{ user.ref }}
 
           Includes a catalog resource owned by the requester. Backstage discovers it after merge into main.
@@ -90,5 +99,7 @@ spec:
         sourcePath: ./output
   output:
     links:
-      - title: Review agent environment request
+      - title: 1. Review agent environment request
         url: ${{ steps.publish.output.remoteUrl }}
+      - title: 2. Follow provisioning in the catalog (appears after merge)
+        url: ${{ backstageBaseUrl }}/catalog/default/resource/${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}

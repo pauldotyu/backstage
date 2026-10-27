@@ -1,5 +1,5 @@
 app:
-  title: Demo Backstage App
+  title: Dev Platform
   baseUrl: http://localhost:3000
 
   # Enable all packages by default, this will discover packages from packages/app/package.json
@@ -20,6 +20,15 @@ app:
     #     config:
     #       path: /
 
+    - home-page-widget:home/toolkit:
+        config:
+          tools:
+            - url: https://github.com/pauldotyu/platform
+              label: Platform
+              icon: github
+            - url: /create
+              label: Request an environment
+              icon: kind:resource
     # Visit tracking records which pages users navigate to and is disabled by default.
     # Enable it to populate the Most Visited and Recently Visited widgets on the Home page.
     # Visit data is stored via UserSettings storage if available, otherwise browser localStorage.
@@ -100,7 +109,7 @@ app:
               height: 4
 
 organization:
-  name: My Company
+  name: AKS DX
 
 backend:
   # Used for enabling authentication, secret is shared by all backend plugins
@@ -188,23 +197,32 @@ catalog:
   import:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
+
   locations:
     - type: url
-      target: https://github.com/pauldotyu/backstage/blob/main/catalog/agent-environments.yaml
-      rules:
-        - allow: [Location, Resource]
+      target: https://github.com/pauldotyu/backstage/blob/main/catalog/**/*.yaml
+
+    - type: url
+      target: https://github.com/pauldotyu/backstage/blob/main/templates/*/template.yaml
+
   rules:
-    - allow: [Component, System, API, Resource, Location, Template]
+    # Standard kinds accepted from other registered locations.
+    - allow: [Component, System, API, Resource, Location]
 
-    ## Uncomment these lines to add more example data
-    # - type: url
-    #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
-
-    ## Uncomment these lines to add an example org
-    # - type: url
-    #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
-    #   rules:
-    #     - allow: [User, Group]
+    # All standard entity kinds accepted from this repository's main branch.
+    - allow:
+        - Component
+        - System
+        - API
+        - Resource
+        - Location
+        - Domain
+        - Template
+        - User
+        - Group
+      locations:
+        - type: url
+          pattern: https://github.com/pauldotyu/backstage/blob/main/**
 
 kubernetes:
   # see https://backstage.io/docs/features/kubernetes/configuration for kubernetes configuration options
@@ -216,5 +234,5 @@ permission:
 
 # see https://backstage.io/docs/ai/mcp-actions for more details
 mcpActions:
-  name: 'My Company Backstage' # defaults to "backstage"
+  name: 'dev-platform' # defaults to "backstage"
   description: 'Tools for managing your software catalog, creating new services from templates, and exploring your developer portal' # optional

@@ -9,6 +9,7 @@ metadata:
     environment: ${{ values.environment | dump }}
     region: ${{ values.location | dump }}
   annotations:
+    platform.example.org/requested-by: ${{ values.requestedBy | dump }}
     backstage.io/source-template: template:default/create-agent-environment
     backstage.io/kubernetes-namespace: agent-environments
     backstage.io/kubernetes-label-selector: crossplane.io/composite=${{ values.team }}-${{ values.project }}-${{ values.environment }}
@@ -16,7 +17,7 @@ metadata:
     - url: https://github.com/pauldotyu/platform/blob/main/requests/agent-environments/${{ values.team }}/${{ values.project }}/${{ values.environment }}/environment.yaml
       title: Environment request
     - url: >-
-        ${{ values.backstageBaseUrl }}/create/templates/default/delete-agent-environment?formData=${{ { team: values.team, project: values.project, environment: values.environment } | dump | urlencode }}
+        ${{ values.backstageBaseUrl }}/create/templates/default/delete-agent-environment?formData=${{ { environmentRef: "resource:default/" + values.team + "-" + values.project + "-" + values.environment } | dump | urlencode }}
       title: Request deletion
 spec:
   type: agent-environment
