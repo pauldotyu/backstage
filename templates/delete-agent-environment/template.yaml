@@ -91,7 +91,5 @@ spec:
         update: false
   output:
     links:
-      - title: Review removal PR (agent environment is not yet destroyed)
+      - title: Review and merge the removal PR. Teardown runs after merge and takes about 10 minutes.
         url: ${{ steps.publish.output.remoteUrl }}
-      - title: Teardown completes after merge. Check the environment's Kubernetes tab
-        url: ${{ backstageBaseUrl }}/catalog/default/resource/${{ steps.lookup.output.entity.metadata.labels.team }}-${{ steps.lookup.output.entity.metadata.labels.project }}-${{ steps.lookup.output.entity.metadata.labels.environment }}
