@@ -8,6 +8,7 @@ spec:
     team: ${{ values.team | dump }}
     project: ${{ values.project | dump }}
     environment: ${{ values.environment | dump }}
+    size: ${{ values.size | dump }}
     location: ${{ values.location | dump }}
     costCenter: ${{ values.costCenter | dump }}
     requesterObjectId: ${{ values.requesterObjectId | dump }}
