@@ -21,4 +21,9 @@ spec:
       repoUrl: ${{ values.deliveryRepoUrl | dump }}
       path: ${{ values.deliveryPath | dump }}
       targetRevision: ${{ values.deliveryRevision | dump }}
+{%- if values.exposeService %}
+      expose:
+        service: ${{ values.exposeService | dump }}
+        port: ${{ values.exposePort }}
+{%- endif %}
 {%- endif %}

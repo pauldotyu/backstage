@@ -111,9 +111,21 @@ spec:
           items:
             type: string
             pattern: '^[a-z]([a-z0-9-]{0,18}[a-z0-9])?$'
+        exposeService:
+          title: Service to expose
+          type: string
+          description: Your app's front-door Service. The platform publishes it at https://<team>-<project>-<environment>.apps.aks.rocks.
+          pattern: '^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'
+          ui:help: "For example: concierge"
+        exposePort:
+          title: Service port
+          type: integer
+          default: 80
       dependencies:
         deliveryRepoUrl:
           required: [deliveryPath]
+        exposeService:
+          required: [exposePort]
   steps:
     - id: render
       name: Generate agent environment request and catalog resource
@@ -137,6 +149,8 @@ spec:
           deliveryRevision: ${{ parameters.deliveryRevision }}
           agents: ${{ parameters.agents }}
           telemetryOnly: ${{ parameters.telemetryOnly }}
+          exposeService: ${{ parameters.exposeService }}
+          exposePort: ${{ parameters.exposePort }}
     - id: publish
       name: Open agent environment request PR
       action: publish:github:pull-request
@@ -164,3 +178,5 @@ spec:
         url: ${{ steps.publish.output.remoteUrl }}
       - title: 2. Open the environment in the catalog (available after merge)
         url: ${{ backstageBaseUrl }}/catalog/default/resource/${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}
+      - title: 3. Open the application (after provisioning)
+        url: https://${{ parameters.team }}-${{ parameters.project }}-${{ parameters.environment }}.apps.aks.rocks

@@ -19,6 +19,10 @@ metadata:
     - url: >-
         ${{ values.backstageBaseUrl }}/create/templates/default/delete-agent-environment?formData=${{ { environmentRef: "resource:default/" + values.team + "-" + values.project + "-" + values.environment } | dump | urlencode }}
       title: Request deletion
+{%- if values.exposeService %}
+    - url: https://${{ values.team }}-${{ values.project }}-${{ values.environment }}.apps.aks.rocks
+      title: Open the application
+{%- endif %}
 spec:
   type: agent-environment
   owner: ${{ values.owner | dump }}
